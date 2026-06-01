@@ -16,11 +16,35 @@ module Attraction { /// Primary Source
 }
 
 namespace Attraction.Maps {
-    export const playerSpawnerTile = createImage(16, 16, game.Color.Red);
-    export const levelCallTile = createImage(16, 16, game.Color.Yellow);
-    export const emptyTile = image.create(16, 16);
+    export const playerSpawnerTile = createImage(
+        16,
+        16,
+        game.Color.Red
+    );
+    export const levelCallTile = createImage(
+        16,
+        16,
+        game.Color.Yellow
+    );
+    export const flipTile = createImage(
+        16,
+        16,
+        game.Color.LightBlue
+    );
+    export const killTile = createImage(
+        16,
+        16,
+        game.Color.Purple
+    );
+    export const emptyTile = image.create(
+        16,
+        16
+    );
 
     export let currentLevel = 0;
+
+    export let spawnLocationR = 0;
+    export let spawnLocationC = 0;
 
     /**
      * Loads a map from an id.
@@ -29,18 +53,30 @@ namespace Attraction.Maps {
      */
     export function load(id: number, target: Sprite) {
         switch (id) {
-            case (0): {
+            case 0: {
                 tiles.setCurrentTilemap(tilemap`level1`);
                 break;
-            };
-            case (1): {
-              tiles.setCurrentTilemap(tilemap`level2`);
+            }
+            case 1: {
+                tiles.setCurrentTilemap(tilemap`level2`);
                 break;
-            };
+            }
+            case 2: {
+                tiles.setCurrentTilemap(tilemap`level3`);
+                break;
+            }
+            case 3: {
+              tiles.setCurrentTilemap(tilemap`level4`);
+                break;
+            }
+            case 4: {
+                tiles.setCurrentTilemap(tilemap`level5`);
+                break;
+            }
 
             default: {
                 throw Exception.of("Unable to load non-existing level!");
-            };
+            }
         }
 
         const points: tiles.Location[] = tiles.getTilesByType(playerSpawnerTile);
@@ -51,6 +87,9 @@ namespace Attraction.Maps {
                 target,
                 i
             );
+
+            spawnLocationR = i.row;
+            spawnLocationC = i.col;
 
             tiles.setTileAt(
                 i,
@@ -67,7 +106,7 @@ namespace Attraction.Maps {
 
         currentLevel = id;
 
-        Anchor.currentAnchor = Anchor.AnchorDirection.DOWN;
+        Anchor.setAnchor(Anchor.AnchorDirection.DOWN);
         Anchor.applyGravity(target);
     }
 }
@@ -80,10 +119,19 @@ namespace Attraction.Lang {
     export function getLevelName(id: number): string {
         switch (id) {
             case 0: {
-                return "Welcome.";
+                return "Welcome";
             }
             case 1: {
-                return "Hello !!!";
+                return "Slates";
+            }
+            case 2: {
+                return "Up & Down";
+            }
+            case 3: {
+                return "Finding Roots";
+            }
+            case 4: {
+                return "Around & Around";
             }
         }
 
@@ -100,6 +148,9 @@ namespace Attraction.Anchor {
 
     export let currentAnchor = Anchor.AnchorDirection.DOWN;
 
+    export let canFlip = true;
+    export let flipCooldown = 20;
+
     export enum AnchorDirection {
         DOWN,
         UP,
@@ -113,6 +164,28 @@ namespace Attraction.Anchor {
         AnchorDirection.LEFT,
         AnchorDirection.RIGHT
     ];
+
+    export const Colliders = [
+        CollisionDirection.Bottom,
+        CollisionDirection.Top,
+        CollisionDirection.Left,
+        CollisionDirection.Right
+    ];
+
+    /**
+     * Sets the current anchor.
+     * @param a The anchor to set to.
+     */
+    export function setAnchor(a: AnchorDirection) {
+        currentAnchor = a;
+    }
+
+    /**
+     * Gets the current anchor.
+     */
+    export function getAnchor(): AnchorDirection {
+        return currentAnchor;
+    }
 
     /**
      * Parses an anchor to a collision direction.
@@ -214,7 +287,7 @@ namespace Attraction.Anchor {
         }
 
         /// Adjusts controls to account for new gravity
-        if ((currentAnchor == AnchorDirection.UP) || (currentAnchor == AnchorDirection.DOWN)) {
+        if ((getAnchor() == AnchorDirection.UP) || (getAnchor() == AnchorDirection.DOWN)) {
             controller.moveSprite(
                 target,
                 150,
@@ -251,6 +324,96 @@ namespace Attraction.Anchor {
 
         return collider;
     }
+
+    /**
+     * Gets and returns the arrow image for gravity.
+     */
+    export function getGravImage(): Image {
+        switch (getAnchor()) {
+            case (AnchorDirection.DOWN): {
+                return img`
+                    . . f . .
+                    . . f . .
+                    . . f . .
+                    f . f . f
+                    . f f f .
+                `;
+            }
+            case (AnchorDirection.UP): {
+                return img`
+                    . f f f .
+                    f . f . f
+                    . . f . .
+                    . . f . .
+                    . . f . .
+                `;
+            }
+            case (AnchorDirection.LEFT): {
+                return img`
+                    . f . . .
+                    f . . . .
+                    f f f f f
+                    f . . . .
+                    . f . . .
+                `;
+            }
+            case (AnchorDirection.RIGHT): {
+                return img`
+                    . . . f .
+                    . . . . f
+                    f f f f f
+                    . . . . f
+                    . . . f .
+                `;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Flips the player's gravity.
+     * @param target The player to flip.
+     */
+    export function flipGravity(target: Sprite) {
+        let c = getAnchor();
+        let d = null;
+
+        if (canFlip) {
+            switch (c) {
+                case (AnchorDirection.DOWN): {
+                    d = AnchorDirection.UP;
+                    break;
+                }
+                case (AnchorDirection.UP): {
+                    d = AnchorDirection.DOWN;
+                    break;
+                }
+                case (AnchorDirection.LEFT): {
+                    d = AnchorDirection.RIGHT;
+                    break;
+                }
+                case (AnchorDirection.RIGHT): {
+                    d = AnchorDirection.LEFT;
+                    break;
+                }
+            }
+
+            setAnchor(d);
+            applyGravity(target);
+            flipCooldown = 20;
+            canFlip = false;
+        }
+    }
+
+    forever(function () {
+        if (flipCooldown > 0) {
+            flipCooldown--;
+            if (flipCooldown == 0) {
+                canFlip = true;
+            }
+        }
+    });
 }
 
 namespace Attraction.GameInit {
@@ -284,40 +447,40 @@ namespace Attraction.GameInit {
 
         new Runnable(function playerControlsSetup() {
             controller.A.onEvent(ControllerButtonEvent.Pressed, function jumpWithA() {
-                if (Anchor.currentAnchor == Anchor.AnchorDirection.DOWN) {
-                    if (Player.isHittingTile(Anchor.anchorToColDirection(Anchor.currentAnchor))) {
+                if (Anchor.getAnchor() == Anchor.AnchorDirection.DOWN) {
+                    if (Player.isHittingTile(Anchor.anchorToColDirection(Anchor.getAnchor()))) {
                         Anchor.jumpAsGravity(Player);
                     }
                 }
             });
 
             controller.up.onEvent(ControllerButtonEvent.Pressed, function jumpWithA() {
-                if (Anchor.currentAnchor == Anchor.AnchorDirection.DOWN) {
-                    if (Player.isHittingTile(Anchor.anchorToColDirection(Anchor.currentAnchor))) {
+                if (Anchor.getAnchor() == Anchor.AnchorDirection.DOWN) {
+                    if (Player.isHittingTile(Anchor.anchorToColDirection(Anchor.getAnchor()))) {
                         Anchor.jumpAsGravity(Player);
                     }
                 }
             });
 
             controller.right.onEvent(ControllerButtonEvent.Pressed, function () {
-                if (Anchor.currentAnchor == Anchor.AnchorDirection.LEFT) {
-                    if (Player.isHittingTile(Anchor.anchorToColDirection(Anchor.currentAnchor))) {
+                if (Anchor.getAnchor() == Anchor.AnchorDirection.LEFT) {
+                    if (Player.isHittingTile(Anchor.anchorToColDirection(Anchor.getAnchor()))) {
                         Anchor.jumpAsGravity(Player);
                     }
                 }
             });
 
             controller.left.onEvent(ControllerButtonEvent.Pressed, function () {
-                if (Anchor.currentAnchor == Anchor.AnchorDirection.RIGHT) {
-                    if (Player.isHittingTile(Anchor.anchorToColDirection(Anchor.currentAnchor))) {
+                if (Anchor.getAnchor() == Anchor.AnchorDirection.RIGHT) {
+                    if (Player.isHittingTile(Anchor.anchorToColDirection(Anchor.getAnchor()))) {
                         Anchor.jumpAsGravity(Player);
                     }
                 }
             });
 
             controller.down.onEvent(ControllerButtonEvent.Pressed, function () {
-                if (Anchor.currentAnchor == Anchor.AnchorDirection.UP) {
-                    if (Player.isHittingTile(Anchor.anchorToColDirection(Anchor.currentAnchor))) {
+                if (Anchor.getAnchor() == Anchor.AnchorDirection.UP) {
+                    if (Player.isHittingTile(Anchor.anchorToColDirection(Anchor.getAnchor()))) {
                         Anchor.jumpAsGravity(Player);
                     }
                 }
@@ -326,9 +489,9 @@ namespace Attraction.GameInit {
 
         new Runnable(function playerChangeGravity() {
             scene.onHitWall(SpriteKind.Player, (handler, location) => {
-                Anchor.currentAnchor = Anchor.colToAnchor(
-                    Anchor.getCollider(
-                        Player
+                Anchor.setAnchor(
+                    Anchor.colToAnchor(
+                        Anchor.getCollider(Player)
                     )
                 );
 
@@ -345,13 +508,44 @@ namespace Attraction.GameInit {
             });
         }).run();
 
-        const display = scene.createRenderable(2, (handler) => {
+        new Runnable(function flipGravity() {
+            scene.onOverlapTile(SpriteKind.Player, Maps.flipTile, (target, location) => {
+                Anchor.flipGravity(target);
+            });
+        }).run();
+
+        new Runnable(function killPlayer() {
+            scene.onOverlapTile(SpriteKind.Player, Maps.killTile, (target, location) => {
+                kill(Player);
+            });
+        }).run();
+
+        new Runnable(function gravityDisplay() {
+            const gravDisplay = entries.sprite(
+                "Gravity Display",
+                Anchor.getGravImage(),
+                SpriteKind.GuiElement
+            );
+
+            gravDisplay.setPosition(
+                153,
+                10
+            );
+
+            gravDisplay.changeScale(1.10);
+
+            forever(function imageSync() {
+                gravDisplay.setImage(Anchor.getGravImage());
+            });
+        }).run();
+
+        const displayLevelName = scene.createRenderable(2, (handler) => {
             handler.printCenter(
                 Lang.getLevelName(
                     Maps.currentLevel
                 ),
-                screen.height / 2,
-                game.Color.Tan,
+                3,
+                game.Color.Black,
                 image.font8
             );
         }, () => true);
@@ -361,9 +555,14 @@ namespace Attraction.GameInit {
         });
     });
 
-    /// HELPERS
-    export function resetPlayerControls(target: Sprite) {
-        Anchor.applyGravity(target);
+    export function kill(target: Sprite) {
+        tiles.placeOnTile(
+            target,
+            tiles.getTileLocation(
+                Maps.spawnLocationC,
+                Maps.spawnLocationR
+            )
+        );
     }
 }
 
