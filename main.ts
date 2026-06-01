@@ -577,17 +577,132 @@ namespace Attraction.ScreenInit {
     /// DEPLOY DEPO
     export function bootstrap() {
         TitleScreenPayload.deploy();
+        TitleWidgetsPayload.deploy();
+        TitleCursorPayload.deploy();
     }
+
+    /// OTHER DATA
+    export let Widgets: Sprite[] = [];
 
     /// PAYLOADS
     export const TitleScreenPayload = new Payload();
+    export const TitleWidgetsPayload = new Payload();
+    export const TitleCursorPayload = new Payload();
 
     /// PACKETS
+    TitleScreenPayload.attach(function primaryThread() {
+        const titleScreen = new ScreenImage(screen.width, screen.height);
+        const handler = titleScreen.extract();
+        const core = titleScreen.access();
+
+        handler.printCenter(
+            "Attraction",
+            screen.height / 2,
+            1,
+            image.font12
+        );
+    });
+    TitleWidgetsPayload.attach(function primaryThread() {
+        const nameSetter = sprites.create(img`
+            1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+            1 f f f f f f f f f f f f f f 1
+            1 f f f f f f f f f f f f f f 1
+            1 f f f f f 1 1 f f f f f f f 1
+            1 f f f 1 1 f f f f f f f f f 1
+            1 f f 1 f f f f f f f f f f f 1
+            1 f f f 1 1 1 1 1 1 f f f f f 1
+            1 f f f f f f f f 1 1 f f f f 1
+            1 f f f f f f f f f 1 f f f f 1
+            1 f f f f f f f f f 1 f f f f 1
+            1 f f f f f f f f 1 f f f f f 1
+            1 f f f f f f f 1 f f f f f f 1
+            1 f f f f f f 1 f f f f f f f 1
+            1 f f f f f f f f f f f f f f 1
+            1 f f f f f f f f f f f f f f 1
+            1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        `, SpriteKind.GuiElement);
+
+        nameSetter.setPosition(
+            30,
+            105
+        );
+
+        const levelSelector = sprites.create(img`
+            1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+            1 f f f f f f f f f f f f f f 1
+            1 f f f f 1 f f f f f f f f f 1
+            1 f f f f 1 f f f f f f f f f 1
+            1 f f f 1 f f f f f f f f f f 1
+            1 f f f 1 f f f f f f f f f f 1
+            1 f f f 1 f f f f f f f f f f 1
+            1 f f f 1 f f f f f f f f f f 1
+            1 f f f 1 f f f f f f f f f f 1
+            1 f f f 1 f f f f f f f f f f 1
+            1 f f f 1 f f f f f f f f f f 1
+            1 f f f 1 f f f f f f f f f f 1
+            1 f f f 1 f f f f 1 1 f f f f 1
+            1 f f f 1 1 1 1 1 1 f f f f f 1
+            1 f f f f f f f f f f f f f f 1
+            1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        `, SpriteKind.GuiElement);
+
+        levelSelector.setPosition(
+            nameSetter.x + (nameSetter.x),
+            nameSetter.y
+        );
+
+        Widgets.push(nameSetter);
+        Widgets.push(levelSelector);
+    });
+    TitleCursorPayload.attach(function primaryThread() {
+        let cursorPos = 0;
+
+        const cursor = sprites.create(
+            createImage(
+                4,
+                4,
+                game.Color.Yellow
+            ),
+            SpriteKind.GuiElement
+        );
+
+        forever(function cursorPositioner() {
+            if (cursor != null) {
+                cursor.setPosition(Widgets[cursorPos].x, Widgets[cursorPos].y - 20);
+            }
+        });
+
+        new Runnable(function inputs() {
+            controller.right.onEvent(ControllerButtonEvent.Pressed, function cycleRight() {
+                if (cursorPos < Widgets.length - 1) {
+                    cursorPos++;
+                } else {
+                    cursorPos = 0;
+                }
+            });
+
+            controller.left.onEvent(ControllerButtonEvent.Pressed, function cycleRight() {
+                if (cursorPos > 0) {
+                    cursorPos--;
+                } else {
+                    cursorPos = Widgets.length - 1;
+                }
+            });
+
+            controller.A.onEvent(ControllerButtonEvent.Pressed, function click() {
+                input(cursorPos);
+            });
+        }).run();
+    });
+    
+    export function input(id: number) {
+        print("Selected button", id)
+    }
 }
 
 /**
  * Start Point.
  */
 namespace Attraction {
-
+    ScreenInit.bootstrap();
 }
