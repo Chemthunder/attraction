@@ -16,65 +16,89 @@ module Attraction { /// Primary Source
 }
 
 namespace Attraction.Maps {
-    export const playerSpawnerTile = img`
-        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-    `;
+    export const playerSpawnerTile = createImage(16, 16, game.Color.Red);
+    export const levelCallTile = createImage(16, 16, game.Color.Yellow);
     export const emptyTile = image.create(16, 16);
-    emptyTile.fill(game.Color.Transparent);
 
+    export let currentLevel = 0;
+
+    /**
+     * Loads a map from an id.
+     * @param id The numeric id of the map.
+     * @param target The player.
+     */
     export function load(id: number, target: Sprite) {
         switch (id) {
             case (0): {
                 tiles.setCurrentTilemap(tilemap`level1`);
-            }
+                break;
+            };
+            case (1): {
+              tiles.setCurrentTilemap(tilemap`level2`);
+                break;
+            };
+
+            default: {
+                throw Exception.of("Unable to load non-existing level!");
+            };
         }
 
-        let points = tiles.getTilesByType(img`
-            2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-            2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-            2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-            2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-            2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-            2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-            2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-            2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-            2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-            2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-            2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-            2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-            2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-            2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-            2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-            2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-        `);
+        const points: tiles.Location[] = tiles.getTilesByType(playerSpawnerTile);
+        const potentialWalls: tiles.Location[] = tiles.getTilesByType(createImage(16, 16, 1));
 
         for (let i of points) {
-            tiles.placeOnTile(target, i);
-            tiles.setTileAt(i, emptyTile);
+            tiles.placeOnTile(
+                target,
+                i
+            );
+
+            tiles.setTileAt(
+                i,
+                emptyTile
+            );
         }
+
+        for (let i of potentialWalls) {
+            tiles.setWallAt(
+                i,
+                true
+            );
+        }
+
+        currentLevel = id;
+
+        Anchor.currentAnchor = Anchor.AnchorDirection.DOWN;
+        Anchor.applyGravity(target);
     }
 }
 
+namespace Attraction.Lang {
+    /**
+     * Gets the level name as a string.
+     * @param id The id of the level.
+     */
+    export function getLevelName(id: number): string {
+        switch (id) {
+            case 0: {
+                return "Welcome.";
+            }
+            case 1: {
+                return "Hello !!!";
+            }
+        }
+
+        return "level name";
+    }
+}
+
+/**
+ * The game-wide gravity engine.
+ */
 namespace Attraction.Anchor {
     export const jumpY = 210;
     export const jumpX = 210;
 
-    export let currentAnchor = Anchor.AnchorDirection.LEFT;
+    export let currentAnchor = Anchor.AnchorDirection.DOWN;
 
     export enum AnchorDirection {
         DOWN,
@@ -90,6 +114,10 @@ namespace Attraction.Anchor {
         AnchorDirection.RIGHT
     ];
 
+    /**
+     * Parses an anchor to a collision direction.
+     * @param anchor The anchor to convert.
+     */
     export function anchorToColDirection(anchor: AnchorDirection): CollisionDirection {
         switch (anchor) {
             case (AnchorDirection.DOWN): {
@@ -109,6 +137,10 @@ namespace Attraction.Anchor {
         return null;
     }
 
+    /**
+     * Parses a collision direction into an Anchor.
+     * @param col The collision direction to convert.
+     */
     export function colToAnchor(col: CollisionDirection): AnchorDirection {
         switch (col) {
             case (CollisionDirection.Bottom): {
@@ -127,6 +159,10 @@ namespace Attraction.Anchor {
         return null;
     }
 
+    /**
+     * Has the targeted sprite jump according to the current gravity anchor.
+     * @param target The target to apply to.
+     */
     export function jumpAsGravity(target: Sprite) {
         switch (currentAnchor) {
             case (AnchorDirection.DOWN): {
@@ -147,7 +183,7 @@ namespace Attraction.Anchor {
             }
         }
     }
-    
+
     /**
      * Applies and syncs gravity.
      * @param target The sprite to target.
@@ -300,7 +336,27 @@ namespace Attraction.GameInit {
             });
         }).run();
 
-        forever(function () {
+        new Runnable(function nextLevelWhenTouchYellow() {
+            scene.onOverlapTile(SpriteKind.Player, Maps.levelCallTile, (target, location) => {
+                Maps.load(
+                    Maps.currentLevel += 1,
+                    target
+                );
+            });
+        }).run();
+
+        const display = scene.createRenderable(2, (handler) => {
+            handler.printCenter(
+                Lang.getLevelName(
+                    Maps.currentLevel
+                ),
+                screen.height / 2,
+                game.Color.Tan,
+                image.font8
+            );
+        }, () => true);
+
+        forever(function gravitySync() {
             Anchor.applyGravity(Player);
         });
     });
