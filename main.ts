@@ -51,7 +51,7 @@ namespace Attraction.Maps {
      * @param id The numeric id of the map.
      * @param target The player.
      */
-    export function load(id: number, target: Sprite) {
+    export function load(id: number, target?: Sprite) {
         switch (id) {
             case 0: {
                 tiles.setCurrentTilemap(tilemap`level1`);
@@ -66,7 +66,7 @@ namespace Attraction.Maps {
                 break;
             }
             case 3: {
-              tiles.setCurrentTilemap(tilemap`level4`);
+                tiles.setCurrentTilemap(tilemap`level4`);
                 break;
             }
             case 4: {
@@ -83,10 +83,19 @@ namespace Attraction.Maps {
         const potentialWalls: tiles.Location[] = tiles.getTilesByType(createImage(16, 16, 1));
 
         for (let i of points) {
+            if (target != null) {
             tiles.placeOnTile(
                 target,
                 i
             );
+            } else {
+                sprites.allOfKind(SpriteKind.Player).forEach(sprite => {
+                    tiles.placeOnTile(
+                        sprite,
+                        i
+                    );
+                });
+            }
 
             spawnLocationR = i.row;
             spawnLocationC = i.col;
@@ -623,27 +632,27 @@ namespace Attraction.ScreenInit {
         `, SpriteKind.GuiElement);
 
         nameSetter.setPosition(
-            30,
+            40,
             105
         );
 
         const levelSelector = sprites.create(img`
-            1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-            1 f f f f f f f f f f f f f f 1
-            1 f f f f 1 f f f f f f f f f 1
-            1 f f f f 1 f f f f f f f f f 1
-            1 f f f 1 f f f f f f f f f f 1
-            1 f f f 1 f f f f f f f f f f 1
-            1 f f f 1 f f f f f f f f f f 1
-            1 f f f 1 f f f f f f f f f f 1
-            1 f f f 1 f f f f f f f f f f 1
-            1 f f f 1 f f f f f f f f f f 1
-            1 f f f 1 f f f f f f f f f f 1
-            1 f f f 1 f f f f f f f f f f 1
-            1 f f f 1 f f f f 1 1 f f f f 1
-            1 f f f 1 1 1 1 1 1 f f f f f 1
-            1 f f f f f f f f f f f f f f 1
-            1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+            2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+            2 f f f f f f f f f f f f f f 2
+            2 f f f f 2 f f f f f f f f f 2
+            2 f f f f 2 f f f f f f f f f 2
+            2 f f f 2 f f f f f f f f f f 2
+            2 f f f 2 f f f f f f f f f f 2
+            2 f f f 2 f f f f f f f f f f 2
+            2 f f f 2 f f f f f f f f f f 2
+            2 f f f 2 f f f f f f f f f f 2
+            2 f f f 2 f f f f f f f f f f 2
+            2 f f f 2 f f f f f f f f f f 2
+            2 f f f 2 f f f f f f f f f f 2
+            2 f f f 2 f f f f 2 2 f f f f 2
+            2 f f f 2 2 2 2 2 2 f f f f f 2
+            2 f f f f f f f f f f f f f f 2
+            2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
         `, SpriteKind.GuiElement);
 
         levelSelector.setPosition(
@@ -651,8 +660,33 @@ namespace Attraction.ScreenInit {
             nameSetter.y
         );
 
+        const credits = sprites.create(img`
+            1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+            1 f f f f f f f f f f f f f f 1
+            1 f f f f f f f f 1 f f f f f 1
+            1 f f f f f 1 1 1 1 f f f f f 1
+            1 f f f 1 1 f f f f f f f f f 1
+            1 f f f 1 f f f f f f f f f f 1
+            1 f f f 1 f f f f f f f f f f 1
+            1 f f f 1 f f f f f f f f f f 1
+            1 f f f 1 f f f f f f f f f f 1
+            1 f f f 1 f f f f f f f f f f 1
+            1 f f f f 1 f f f f f f f f f 1
+            1 f f f f f 1 1 f 1 f f f f f 1
+            1 f f f f f f f 1 f f f f f f 1
+            1 f f f f f f f f f f f f f f 1
+            1 f f f f f f f f f f f f f f 1
+            1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        `, SpriteKind.GuiElement);
+
+        credits.setPosition(
+            levelSelector.x + (nameSetter.x),
+            levelSelector.y
+        );
+
         Widgets.push(nameSetter);
         Widgets.push(levelSelector);
+        Widgets.push(credits);
     });
     TitleCursorPayload.attach(function primaryThread() {
         let cursorPos = 0;
@@ -694,9 +728,97 @@ namespace Attraction.ScreenInit {
             });
         }).run();
     });
-    
+
     export function input(id: number) {
-        print("Selected button", id)
+        switch (id) {
+            case 0: {
+                color.startFade(color.White, color.Black, 500);
+
+                pause(500);
+
+                sprites.destroyAllSpritesOfKind(SpriteKind.GuiElement);
+                sprites.destroyAllSpritesOfKind(SpriteKind.RenderElement);
+
+                GameInit.bootstrap();
+
+                color.startFadeFromCurrent(color.originalPalette);
+                break;
+            }
+            case 1: {
+                print("This feature is currently innaccessible, see in future updates!");
+                break;
+            }
+            case 2: {
+                sprites.destroyAllSpritesOfKind(SpriteKind.GuiElement);
+                sprites.destroyAllSpritesOfKind(SpriteKind.RenderElement);
+
+                pause(350);
+
+                color.setPalette(color.Black);
+
+                game.consoleOverlay.clear();
+
+                let strings = [
+                    MAIN.getName(),
+                    `Developed by ${MAIN.getMetaData().getAuthor()}`,
+                    `Version ${MAIN.getMetaData().getVersion()}`,
+                    `Thank you so much for`,
+                    `playing!`
+                ];
+
+                let display = scene.createRenderable(5, (handler) => {
+                    for (let i of strings) {
+                        handler.printCenter(
+                            i,
+                            (screen.height / 2 - 40) + (strings.indexOf(i) * 10),
+                            1
+                        );
+                    }
+
+                    handler.drawImage(img`
+                        ........................................................................................................................
+                        ........................................................................................................................
+                        ........................................................................................................................
+                        ........................................................................................................................
+                        ..............................................................................................................1111......
+                        ...........................................................................................................111..........
+                        ............11.............................................1.............................................11.............
+                        ............1......1................................1......1............................1...............1...............
+                        ...........1.......1................................1......1............................1...............1...............
+                        ..........1........1.......................11.......1......1............................1..............1................
+                        ..........1.........1.........111......11.1.1.......1......1............................1..............1................
+                        .........1..........1.11......1..1.....111..1.......1......1..................1.........1...11.........1................
+                        .........1..........11..1....1...1.....11...1.....111111...1.1...............1.1....111.1...11..........1...............
+                        .........1..........11...1...1..1.....1.....1.......1......11.1......1.....1.1.1....1..11...11..........1...............
+                        .........1...........1...1...1..1.....1.....1.......1......11.1......1......1..1....1...11.1.1..........1...............
+                        .........1...........1....1...11......11....1.......1......1..1......11.....1..1....1....1.1.1..........1...............
+                        ..........1..........1.....111.1.......1....1.......1......1...1.....11.....1..1....1....1..1...........11..............
+                        ..........1.....................1....................1.....1...1.....11.....1..1....1......1.1...........1..............
+                        ...........1.....................111.................1.....1...1.....1.1....1..1.....1.....1.1...........1..............
+                        ...........1....................................................1...1..1.......1.....1...11...1..........1..............
+                        ............11...................................................1111...11..1...1.....111......1........111.............
+                        ..............11..1.......................................................11....................11.....1..............1.
+                        ................11................................................................................11111.............11..
+                        ...................................................................................................................1....
+                        ..................................................................................................................1.....
+                        ...........11....................................................................................................1......
+                        .............1......................................................................11111111111.............11111.......
+                        ..............1111..................................................1111111111111111...........1111111111111............
+                        ..................11111111111111111111111111111111111111111111111111....................................................
+                        ........................................................................................................................
+                        ........................................................................................................................
+                        ........................................................................................................................
+                    `, 20, 80);
+                });
+
+                color.startFadeFromCurrent(
+                    color.originalPalette,
+                    500
+                );
+
+                break;
+            }
+        }
     }
 }
 

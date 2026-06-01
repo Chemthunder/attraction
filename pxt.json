@@ -3,7 +3,8 @@
     "description": "",
     "dependencies": {
         "device": "*",
-        "Coil": "github:chemthunder/coil#master"
+        "Coil": "github:chemthunder/coil#master",
+        "Color Fading": "github:jwunderl/pxt-color#v0.2.3"
     },
     "files": [
         "main.ts",
