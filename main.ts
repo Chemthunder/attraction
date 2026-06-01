@@ -420,8 +420,8 @@ namespace Attraction.Anchor {
  * The game (post)
  */
 namespace Attraction.GameInit {
+    /// DEPLOY DEPO
     export function bootstrap() {
-        /// THREADS
         GameBeginPayload.deploy();
         GameRenderPayload.deploy();
     }
@@ -574,9 +574,20 @@ namespace Attraction.GameInit {
  * The game (pre)
  */
 namespace Attraction.ScreenInit {
-    // title screen and more
+    /// DEPLOY DEPO
+    export function bootstrap() {
+        TitleScreenPayload.deploy();
+    }
+
+    /// PAYLOADS
+    export const TitleScreenPayload = new Payload();
+
+    /// PACKETS
 }
 
+/**
+ * Start Point.
+ */
 namespace Attraction {
 
 }
