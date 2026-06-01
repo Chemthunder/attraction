@@ -416,10 +416,14 @@ namespace Attraction.Anchor {
     });
 }
 
+/**
+ * The game (post)
+ */
 namespace Attraction.GameInit {
     export function bootstrap() {
-        /// LOADS THREADS
+        /// THREADS
         GameBeginPayload.deploy();
+        GameRenderPayload.deploy();
     }
 
     /// OTHER DATA
@@ -431,6 +435,7 @@ namespace Attraction.GameInit {
 
     /// PAYLOADS
     export const GameBeginPayload = new Payload();
+    export const GameRenderPayload = new Payload();
 
     /// PACKETS
     GameBeginPayload.attach(function primaryGameThread() {
@@ -487,15 +492,20 @@ namespace Attraction.GameInit {
             });
         }).run();
 
+        forever(function gravitySync() {
+            Anchor.applyGravity(Player);
+        });
+    });
+    GameBeginPayload.attach(function secondaryGameThread() {
         new Runnable(function playerChangeGravity() {
             scene.onHitWall(SpriteKind.Player, (handler, location) => {
                 Anchor.setAnchor(
                     Anchor.colToAnchor(
-                        Anchor.getCollider(Player)
+                        Anchor.getCollider(handler)
                     )
                 );
 
-                Anchor.applyGravity(Player);
+                Anchor.applyGravity(handler);
             });
         }).run();
 
@@ -516,10 +526,18 @@ namespace Attraction.GameInit {
 
         new Runnable(function killPlayer() {
             scene.onOverlapTile(SpriteKind.Player, Maps.killTile, (target, location) => {
-                kill(Player);
+                tiles.placeOnTile(
+                    target,
+                    tiles.getTileLocation(
+                        Maps.spawnLocationC,
+                        Maps.spawnLocationR
+                    )
+                );
             });
         }).run();
+    });
 
+    GameRenderPayload.attach(function primaryRenderThread() {
         new Runnable(function gravityDisplay() {
             const gravDisplay = entries.sprite(
                 "Gravity Display",
@@ -549,21 +567,16 @@ namespace Attraction.GameInit {
                 image.font8
             );
         }, () => true);
-
-        forever(function gravitySync() {
-            Anchor.applyGravity(Player);
-        });
     });
-
-    export function kill(target: Sprite) {
-        tiles.placeOnTile(
-            target,
-            tiles.getTileLocation(
-                Maps.spawnLocationC,
-                Maps.spawnLocationR
-            )
-        );
-    }
 }
 
-Attraction.GameInit.bootstrap();
+/**
+ * The game (pre)
+ */
+namespace Attraction.ScreenInit {
+    // title screen and more
+}
+
+namespace Attraction {
+
+}
