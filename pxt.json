@@ -1,0 +1,27 @@
+{
+    "name": "Attraction",
+    "description": "",
+    "dependencies": {
+        "device": "*",
+        "Coil": "github:chemthunder/coil#master"
+    },
+    "files": [
+        "main.ts",
+        "README.md",
+        "assets.json",
+        "tilemap.g.jres",
+        "tilemap.g.ts"
+    ],
+    "testFiles": [
+        "test.ts"
+    ],
+    "targetVersions": {
+        "target": "4.0.14",
+        "targetId": "arcade"
+    },
+    "supportedTargets": [
+        "arcade"
+    ],
+    "preferredEditor": "tsprj",
+    "languageRestriction": "javascript-only"
+}
