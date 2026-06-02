@@ -1,6 +1,9 @@
 enablePrint()
 
-module Attraction { /// Primary Source
+/**
+ * Running details and primary source.
+ */
+module Attraction {
     export const entries = Entries.create();
     export const pack = new DataCompound("Attraction");
 
@@ -15,31 +18,34 @@ module Attraction { /// Primary Source
     );
 }
 
+/**
+ * Controls the current level and level data.
+ */
 namespace Attraction.Maps {
-    export const playerSpawnerTile = createImage(
+    export const playerSpawnerTile = entries.register("tiles#playerSpawnerTile", createImage(
         16,
         16,
         game.Color.Red
-    );
-    export const levelCallTile = createImage(
+    ));
+    export const levelCallTile = entries.register("tiles#levelCallTile", createImage(
         16,
         16,
         game.Color.Yellow
-    );
-    export const flipTile = createImage(
+    ));
+    export const flipTile = entries.register("tiles#flipTile", createImage(
         16,
         16,
         game.Color.LightBlue
-    );
-    export const killTile = createImage(
+    ));
+    export const killTile = entries.register("tiles#killTile", createImage(
         16,
         16,
         game.Color.Purple
-    );
-    export const emptyTile = image.create(
+    ));
+    export const emptyTile = entries.register("tiles#emptyTile", image.create(
         16,
         16
-    );
+    ));
 
     export let currentLevel = 0;
 
@@ -73,6 +79,14 @@ namespace Attraction.Maps {
                 tiles.setCurrentTilemap(tilemap`level5`);
                 break;
             }
+            case 5: {
+                tiles.setCurrentTilemap(tilemap`level6`);
+                break;
+            }
+            case 6: {
+              tiles.setCurrentTilemap(tilemap`level7`);
+                break;
+            }
 
             default: {
                 throw Exception.of("Unable to load non-existing level!");
@@ -84,10 +98,10 @@ namespace Attraction.Maps {
 
         for (let i of points) {
             if (target != null) {
-            tiles.placeOnTile(
-                target,
-                i
-            );
+                tiles.placeOnTile(
+                    target,
+                    i
+                );
             } else {
                 sprites.allOfKind(SpriteKind.Player).forEach(sprite => {
                     tiles.placeOnTile(
@@ -120,6 +134,9 @@ namespace Attraction.Maps {
     }
 }
 
+/**
+ * Fetches and dispatches text.
+ */
 namespace Attraction.Lang {
     /**
      * Gets the level name as a string.
@@ -142,6 +159,9 @@ namespace Attraction.Lang {
             case 4: {
                 return "Around & Around";
             }
+            case 5: {
+                return "Amaze";
+            }
         }
 
         return "level name";
@@ -152,21 +172,28 @@ namespace Attraction.Lang {
  * The game-wide gravity engine.
  */
 namespace Attraction.Anchor {
-    export const jumpY = 210;
-    export const jumpX = 210;
+    export const jumpY = 210; /// Jump height when in the DOWN or UP orientations.
+    export const jumpX = 210; /// Jump height when in the LEFT or RIGHT orientations.
 
-    export let currentAnchor = Anchor.AnchorDirection.DOWN;
+    export let currentAnchor = Anchor.AnchorDirection.DOWN; /// The current gravity anchor.
 
-    export let canFlip = true;
-    export let flipCooldown = 20;
+    export let canFlip = true; /// If the player can flip gravity or not.
+    export let flipCooldown = 20; /// Number used to control the cooldown for flipping.
+    export let flipDelay = 20; /// The number the cooldown sets to or sumth idk
 
+    /**
+     * The directions gravity can pull from.
+     */
     export enum AnchorDirection {
-        DOWN,
-        UP,
-        LEFT,
-        RIGHT
+        DOWN, /// Pulls DOWN (normal gravity)
+        UP, /// Pulls UP (reversed gravity on y-axis)
+        LEFT, /// Pulls LEFT
+        RIGHT /// Pulls RIGHT
     }
 
+    /**
+     * AnchorDirection as a list.
+     */
     export const Directions = [
         AnchorDirection.DOWN,
         AnchorDirection.UP,
@@ -174,6 +201,9 @@ namespace Attraction.Anchor {
         AnchorDirection.RIGHT
     ];
 
+    /**
+     * All possible wall hitting collision directions.
+     */
     export const Colliders = [
         CollisionDirection.Bottom,
         CollisionDirection.Top,
@@ -410,7 +440,7 @@ namespace Attraction.Anchor {
 
             setAnchor(d);
             applyGravity(target);
-            flipCooldown = 20;
+            flipCooldown = flipDelay;
             canFlip = false;
         }
     }
@@ -428,7 +458,7 @@ namespace Attraction.Anchor {
 /**
  * The game (post)
  */
-namespace Attraction.GameInit {
+namespace Attraction.PostPipeline {
     /// DEPLOY DEPO
     export function bootstrap() {
         GameBeginPayload.deploy();
@@ -441,6 +471,7 @@ namespace Attraction.GameInit {
         8,
         game.Color.Yellow
     );
+    export let PlayerInstance: Sprite = null;
 
     /// PAYLOADS
     export const GameBeginPayload = new Payload();
@@ -448,17 +479,22 @@ namespace Attraction.GameInit {
 
     /// PACKETS
     GameBeginPayload.attach(function primaryGameThread() {
+        /// Creates player
         const Player = entries.sprite(
             "Player",
             PlayerImg,
             SpriteKind.Player
         );
 
+        PlayerInstance = Player; /// Syncs player
+
+        /// Loads first level
         Maps.load(
             0,
             Player
         );
 
+        /// Sets up the player controls in all orientations
         new Runnable(function playerControlsSetup() {
             controller.A.onEvent(ControllerButtonEvent.Pressed, function jumpWithA() {
                 if (Anchor.getAnchor() == Anchor.AnchorDirection.DOWN) {
@@ -501,23 +537,24 @@ namespace Attraction.GameInit {
             });
         }).run();
 
+        /// Permanent clock to sync gravity every game tick
         forever(function gravitySync() {
             Anchor.applyGravity(Player);
         });
     });
     GameBeginPayload.attach(function secondaryGameThread() {
+        /// Controls the player changing gravity when touching a wall
         new Runnable(function playerChangeGravity() {
             scene.onHitWall(SpriteKind.Player, (handler, location) => {
                 Anchor.setAnchor(
-                    Anchor.colToAnchor(
-                        Anchor.getCollider(handler)
-                    )
+                    Anchor.colToAnchor(Anchor.getCollider(handler))
                 );
 
                 Anchor.applyGravity(handler);
             });
         }).run();
 
+        /// Progresses the level to the next when touching a yellow block
         new Runnable(function nextLevelWhenTouchYellow() {
             scene.onOverlapTile(SpriteKind.Player, Maps.levelCallTile, (target, location) => {
                 Maps.load(
@@ -527,12 +564,14 @@ namespace Attraction.GameInit {
             });
         }).run();
 
+        /// Flips gravity when touching a cyan block
         new Runnable(function flipGravity() {
             scene.onOverlapTile(SpriteKind.Player, Maps.flipTile, (target, location) => {
                 Anchor.flipGravity(target);
             });
         }).run();
 
+        /// Kills the player when touching a purple block
         new Runnable(function killPlayer() {
             scene.onOverlapTile(SpriteKind.Player, Maps.killTile, (target, location) => {
                 tiles.placeOnTile(
@@ -542,14 +581,17 @@ namespace Attraction.GameInit {
                         Maps.spawnLocationR
                     )
                 );
+
+                Anchor.setAnchor(Anchor.AnchorDirection.DOWN);
             });
         }).run();
     });
 
     GameRenderPayload.attach(function primaryRenderThread() {
+        /// Creates the gravity arrow thing
         new Runnable(function gravityDisplay() {
             const gravDisplay = entries.sprite(
-                "Gravity Display",
+                "Gui#GravityDisplay",
                 Anchor.getGravImage(),
                 SpriteKind.GuiElement
             );
@@ -566,7 +608,8 @@ namespace Attraction.GameInit {
             });
         }).run();
 
-        const displayLevelName = scene.createRenderable(2, (handler) => {
+        /// Creates the level name display
+        const displayLevelName = entries.register("Gui#LevelNameDisplay", scene.createRenderable(2, (handler) => {
             handler.printCenter(
                 Lang.getLevelName(
                     Maps.currentLevel
@@ -575,16 +618,17 @@ namespace Attraction.GameInit {
                 game.Color.Black,
                 image.font8
             );
-        }, () => true);
+        }, () => true));
     });
 }
 
 /**
  * The game (pre)
  */
-namespace Attraction.ScreenInit {
+namespace Attraction.PrePipeline {
     /// DEPLOY DEPO
     export function bootstrap() {
+        PreScreenPayload.deploy();
         TitleScreenPayload.deploy();
         TitleWidgetsPayload.deploy();
         TitleCursorPayload.deploy();
@@ -592,15 +636,29 @@ namespace Attraction.ScreenInit {
 
     /// OTHER DATA
     export let Widgets: Sprite[] = [];
+    export let inCredits = false;
+    export let inGame = false;
 
     /// PAYLOADS
+    export const PreScreenPayload = new Payload();
     export const TitleScreenPayload = new Payload();
     export const TitleWidgetsPayload = new Payload();
     export const TitleCursorPayload = new Payload();
 
     /// PACKETS
+    PreScreenPayload.attach(function primaryThread() {
+        color.setPalette(color.Black);
+        color.startFadeFromCurrent(color.originalPalette);
+    });
     TitleScreenPayload.attach(function primaryThread() {
-        const titleScreen = new ScreenImage(screen.width, screen.height);
+        /// Creates the "Attraction" title text
+        const titleScreen = entries.register(
+            "Title#Text",
+            new ScreenImage(
+                screen.width,
+                screen.height
+            )
+        );
         const handler = titleScreen.extract();
         const core = titleScreen.access();
 
@@ -610,9 +668,18 @@ namespace Attraction.ScreenInit {
             1,
             image.font12
         );
+
+        handler.print(
+            `Version ${MAIN.getMetaData().getVersion()}`,
+            0,
+            0,
+            1,
+            image.font5
+        );
     });
     TitleWidgetsPayload.attach(function primaryThread() {
-        const nameSetter = sprites.create(img`
+        /// Creates the title screen widgets
+        const nameSetter = entries.sprite("Title#NameSetter", img`
             1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
             1 f f f f f f f f f f f f f f 1
             1 f f f f f f f f f f f f f f 1
@@ -636,7 +703,7 @@ namespace Attraction.ScreenInit {
             105
         );
 
-        const levelSelector = sprites.create(img`
+        const levelSelector = entries.sprite("Title#LevelSelector", img`
             2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
             2 f f f f f f f f f f f f f f 2
             2 f f f f 2 f f f f f f f f f 2
@@ -660,7 +727,7 @@ namespace Attraction.ScreenInit {
             nameSetter.y
         );
 
-        const credits = sprites.create(img`
+        const credits = entries.sprite("Title#Credits", img`
             1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
             1 f f f f f f f f f f f f f f 1
             1 f f f f f f f f 1 f f f f f 1
@@ -689,6 +756,7 @@ namespace Attraction.ScreenInit {
         Widgets.push(credits);
     });
     TitleCursorPayload.attach(function primaryThread() {
+        /// Creates the cursor blah blah blah
         let cursorPos = 0;
 
         const cursor = sprites.create(
@@ -702,80 +770,105 @@ namespace Attraction.ScreenInit {
 
         forever(function cursorPositioner() {
             if (cursor != null) {
-                cursor.setPosition(Widgets[cursorPos].x, Widgets[cursorPos].y - 20);
+                if (!inCredits || !inGame) {
+                    cursor.setPosition(
+                        Widgets[cursorPos].x,
+                        Widgets[cursorPos].y - 20
+                    );
+                }
             }
         });
 
+        /// Cursor Inputs
         new Runnable(function inputs() {
             controller.right.onEvent(ControllerButtonEvent.Pressed, function cycleRight() {
-                if (cursorPos < Widgets.length - 1) {
-                    cursorPos++;
-                } else {
-                    cursorPos = 0;
+                if (!inCredits || !inGame) {
+                    if (cursorPos < Widgets.length - 1) {
+                        cursorPos++;
+                    } else {
+                        cursorPos = 0;
+                    }
                 }
             });
 
             controller.left.onEvent(ControllerButtonEvent.Pressed, function cycleRight() {
-                if (cursorPos > 0) {
-                    cursorPos--;
-                } else {
-                    cursorPos = Widgets.length - 1;
+                if (!inCredits || !inGame) {
+                    if (cursorPos > 0) {
+                        cursorPos--;
+                    } else {
+                        cursorPos = Widgets.length - 1;
+                    }
                 }
             });
 
             controller.A.onEvent(ControllerButtonEvent.Pressed, function click() {
-                input(cursorPos);
+                if (!inCredits || !inGame) {
+                    input(cursorPos);
+                } else {
+                    print("No input")
+                }
             });
         }).run();
     });
 
+    /**
+     * Title screen inputs
+     * @param id The button id.
+     */
     export function input(id: number) {
-        switch (id) {
-            case 0: {
-                color.startFade(color.White, color.Black, 500);
+        if (!inCredits || !inGame) {
+            switch (id) {
+                case 0: {
+                    inGame = true;
+                    color.startFade(
+                        color.White,
+                        color.Black,
+                        500
+                    );
 
-                pause(500);
+                    pause(500);
 
-                sprites.destroyAllSpritesOfKind(SpriteKind.GuiElement);
-                sprites.destroyAllSpritesOfKind(SpriteKind.RenderElement);
+                    sprites.destroyAllSpritesOfKind(SpriteKind.GuiElement);
+                    sprites.destroyAllSpritesOfKind(SpriteKind.RenderElement);
 
-                GameInit.bootstrap();
+                    PostPipeline.bootstrap();
 
-                color.startFadeFromCurrent(color.originalPalette);
-                break;
-            }
-            case 1: {
-                print("This feature is currently innaccessible, see in future updates!");
-                break;
-            }
-            case 2: {
-                sprites.destroyAllSpritesOfKind(SpriteKind.GuiElement);
-                sprites.destroyAllSpritesOfKind(SpriteKind.RenderElement);
+                    color.startFadeFromCurrent(color.originalPalette);
+                    break;
+                }
+                case 1: {
+                    print("This feature is currently innaccessible, see in future updates!");
+                    break;
+                }
+                case 2: {
+                    inCredits = true;
+                    sprites.destroyAllSpritesOfKind(SpriteKind.GuiElement);
+                    sprites.destroyAllSpritesOfKind(SpriteKind.RenderElement);
 
-                pause(350);
+                    pause(350);
 
-                color.setPalette(color.Black);
+                    color.setPalette(color.Black);
 
-                game.consoleOverlay.clear();
+                    game.consoleOverlay.clear();
 
-                let strings = [
-                    MAIN.getName(),
-                    `Developed by ${MAIN.getMetaData().getAuthor()}`,
-                    `Version ${MAIN.getMetaData().getVersion()}`,
-                    `Thank you so much for`,
-                    `playing!`
-                ];
+                    let strings = [
+                        MAIN.getName(),
+                        `Developed by ${MAIN.getMetaData().getAuthor()}`,
+                        `Version ${MAIN.getMetaData().getVersion()}`,
+                        `Thank you so much for`,
+                        `playing!`
+                    ];
 
-                let display = scene.createRenderable(5, (handler) => {
-                    for (let i of strings) {
-                        handler.printCenter(
-                            i,
-                            (screen.height / 2 - 40) + (strings.indexOf(i) * 10),
-                            1
-                        );
-                    }
+                    let display = entries.register("Credits#Display", scene.createRenderable(5, (handler) => {
+                        for (let i of strings) {
+                            handler.printCenter(
+                                i,
+                                (screen.height / 2 - 40) + (strings.indexOf(i) * 10),
+                                1
+                            );
+                        }
 
-                    handler.drawImage(img`
+                        handler.drawImage(img`
                         ........................................................................................................................
                         ........................................................................................................................
                         ........................................................................................................................
@@ -809,14 +902,18 @@ namespace Attraction.ScreenInit {
                         ........................................................................................................................
                         ........................................................................................................................
                     `, 20, 80);
-                });
+                    }));
 
-                color.startFadeFromCurrent(
-                    color.originalPalette,
-                    500
-                );
+                    color.startFadeFromCurrent(
+                        color.originalPalette,
+                        500
+                    );
 
-                break;
+                    controller.A.onEvent(ControllerButtonEvent.Pressed, function click() {
+                        game.reset();
+                    });
+                    break;
+                }
             }
         }
     }
@@ -826,5 +923,19 @@ namespace Attraction.ScreenInit {
  * Start Point.
  */
 namespace Attraction {
-    ScreenInit.bootstrap();
+    /// DEV CONFIG
+    export const CONFIG = new Config();
+    CONFIG.writeEntries(
+        [
+            Property.of("JumpStart", true)
+        ]
+    );
+    CONFIG.sync();
+    /// END
+
+    if (CONFIG.fetch("JumpStart")) {
+        PostPipeline.bootstrap();
+    } else {
+        PrePipeline.bootstrap();
+    }
 }

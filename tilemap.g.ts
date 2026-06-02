@@ -71,7 +71,18 @@ namespace myTiles {
 . . . . . . . . . . 
 `, [myTiles.transparency16,myTiles.tile1,myTiles.tile2,myTiles.tile3,myTiles.tile4,myTiles.tile5], TileScale.Sixteen);
             case "level6":
-            case "level6":return tiles.createTilemap(hex`0a0008000101010101010101010101000000000000000001010000000000000000010100000000000000000101000000000000000001010001010100000000010100010200000000000101010101010101010101`, img`
+            case "level6":return tiles.createTilemap(hex`0a0008000101010101010101010101000000000000000101010001040404010001010100010404010100000101000000000001010001010001010100010000010100010200000103010101010101010101010101`, img`
+. . . . . . . . . . 
+. . . . . . . . . . 
+. . . . . . . . . . 
+. . . . . . . . . . 
+. . . . . . . . . . 
+. . . . . . . . . . 
+. . . . . . . . . . 
+. . . . . . . . . . 
+`, [myTiles.transparency16,myTiles.tile1,myTiles.tile2,myTiles.tile3,myTiles.tile4], TileScale.Sixteen);
+            case "level7":
+            case "level7":return tiles.createTilemap(hex`0a0008000101010101010101010101000000000000000001010000000000000000010100000000000000000101000000000000000001010000000000000000010100000000000002000101010101010101010101`, img`
 . . . . . . . . . . 
 . . . . . . . . . . 
 . . . . . . . . . . 
