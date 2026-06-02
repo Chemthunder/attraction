@@ -84,7 +84,8 @@ namespace Attraction.Maps {
                 break;
             }
             case 6: {
-              tiles.setCurrentTilemap(tilemap`level7`);
+                tiles.setCurrentTilemap(tilemap`level7`);
+                PostPipeline.EndOfDemoPayload.deploy();
                 break;
             }
 
@@ -161,6 +162,9 @@ namespace Attraction.Lang {
             }
             case 5: {
                 return "Amaze";
+            }
+            case 6: {
+                return "End of Demo";
             }
         }
 
@@ -491,6 +495,7 @@ namespace Attraction.PostPipeline {
     /// PAYLOADS
     export const GameBeginPayload = new Payload();
     export const GameRenderPayload = new Payload();
+    export const EndOfDemoPayload = new Payload();
 
     /// PACKETS
     GameBeginPayload.attach(function primaryGameThread() {
@@ -634,6 +639,11 @@ namespace Attraction.PostPipeline {
                 image.font8
             );
         }, () => true));
+    });
+
+    EndOfDemoPayload.attach(function primaryThread() {
+        //
+        print("demo concluded");
     });
 }
 
