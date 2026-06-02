@@ -1,5 +1,3 @@
-enablePrint()
-
 /**
  * Running details and primary source.
  */
@@ -492,6 +490,8 @@ namespace Attraction.PostPipeline {
     );
     export let PlayerInstance: Sprite = null;
 
+    export let hasEnded = false;
+
     /// PAYLOADS
     export const GameBeginPayload = new Payload();
     export const GameRenderPayload = new Payload();
@@ -559,7 +559,9 @@ namespace Attraction.PostPipeline {
 
         /// Permanent clock to sync gravity every game tick
         forever(function gravitySync() {
-            Anchor.applyGravity(Player);
+            if (!hasEnded) {
+                Anchor.applyGravity(Player);
+            }
         });
     });
     GameBeginPayload.attach(function secondaryGameThread() {
@@ -642,8 +644,29 @@ namespace Attraction.PostPipeline {
     });
 
     EndOfDemoPayload.attach(function primaryThread() {
-        //
-        print("demo concluded");
+        print("Demo has been concluded.");
+    
+        hasEnded = true;
+
+        const TEXTS: string[] = [
+            `Thank you for trying`,
+            `the demo!`,
+            `-Chem`,
+            ``,
+            `~ Attraction ~`
+        ];
+        
+        new Runnable(function endTextDisplay() {
+            const endText = entries.register("End#EndText", scene.createRenderable(11, (handler) => {
+                for (let i = 0; i < TEXTS.length; i ++) {
+                    handler.printCenter(
+                        TEXTS[i],
+                        30 + (i * 15),
+                        1
+                    );
+                }
+            }));
+        }).run();
     });
 }
 
@@ -844,7 +867,7 @@ namespace Attraction.PrePipeline {
                     screen.height
                 )
             );
-            
+
             readout.extract().printCenter(
                 Lang.getWidgetName(cursorPos),
                 40,
