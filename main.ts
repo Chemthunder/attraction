@@ -166,6 +166,21 @@ namespace Attraction.Lang {
 
         return "level name";
     }
+
+    export function getWidgetName(id: number): string {
+        switch (id) {
+            case 0: {
+                return "Begin Game"
+            }
+            case 1: {
+                return "Level Selector"
+            }
+            case 2: {
+                return "Credits"
+            }
+        }
+        return "";
+    }
 }
 
 /**
@@ -759,7 +774,8 @@ namespace Attraction.PrePipeline {
         /// Creates the cursor blah blah blah
         let cursorPos = 0;
 
-        const cursor = sprites.create(
+        const cursor = entries.sprite(
+            "Title#Cursor",
             createImage(
                 4,
                 4,
@@ -808,6 +824,22 @@ namespace Attraction.PrePipeline {
                     print("No input")
                 }
             });
+        }).run();
+
+        new Runnable(function textReadoutForWidgets() {
+            const readout = entries.register(
+                "Title#WidgetReadout",
+                new ScreenImage(
+                    screen.width,
+                    screen.height
+                )
+            );
+            
+            readout.extract().printCenter(
+                Lang.getWidgetName(cursorPos),
+                40,
+                1
+            );
         }).run();
     });
 
@@ -927,7 +959,7 @@ namespace Attraction {
     export const CONFIG = new Config();
     CONFIG.writeEntries(
         [
-            Property.of("JumpStart", true)
+            Property.of("JumpStart", false)
         ]
     );
     CONFIG.sync();
